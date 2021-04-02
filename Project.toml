@@ -1,0 +1,13 @@
+name = "Slow"
+uuid = "e4855c6d-60ae-49c0-a936-05b0c4d57984"
+authors = ["Zack Li"]
+version = "0.1.0"
+
+[compat]
+julia = "1.5"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
