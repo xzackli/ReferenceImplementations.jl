@@ -3,7 +3,8 @@ module Slow
 using MacroTools
 using Test
 
-export @slowdef, @slow, @slowtest
+export @slowdef, @slow
+# export @slowtest
 
 struct SlowImplementation end
 

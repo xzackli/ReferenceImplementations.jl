@@ -18,6 +18,6 @@ using Test
     g(x) = cos(x)
 
     @test g(1.0) == @slow g(1.0)
-    @slowtest g(2.0)
+    Slow.@slowtest g(2.0)
 
 end
