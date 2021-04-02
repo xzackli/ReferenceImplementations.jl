@@ -20,4 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/xzackli/Slow.jl",
+    devbranch = "main"
 )
