@@ -37,6 +37,7 @@ If you're using the slow version in a complicated expression, you should use the
 @slow(f(1.0)) + 1.0
 ```
 
+# API
 
 ```@index
 ```
