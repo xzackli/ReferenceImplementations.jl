@@ -29,9 +29,13 @@ f(x) = sin(x)
 @time f(1.0)
 ```
 
-The function definition `func(args...) = ...` prefaced by [`@slowdef`](@ref) is replaced with `func(::Slow.SlowImplementation, args...) = ...`. This is a shortcut for a common Julia multimethod pattern, where different implementations dispatch on the first argument. I think the magic number here is two (fast and slow) -- if you have three implementations, you should probably just define your own multimethod type.
+The function definition `func(args...) = ...` prefaced by [`@slowdef`](@ref) is replaced with `func(::Slow.SlowImplementation, args...) = ...`. This is a shortcut for a common Julia multimethod pattern, where different implementations dispatch on the first argument. I think the magic number here is two (fast and slow) -- if you have three implementations, you should probably just define your own multimethod type. This macro can help with development too -- one common pattern of writing code is to (first) make it correct and (then) make it fast. By keeping separate fast and [`@slow`](@ref) implementations, one can more easily resist premature optimization and micro-optimizations.
 
-This macro can help with development too -- one common pattern of writing code is to (first) make it correct and (then) make it fast. By keeping separate fast and [`@slow`](@ref) implementations, one can more easily resist premature optimization and micro-optimizations.
+If you're using the slow version in a complicated expression, you should use the macro [`@slow`](@ref) like a function and wrap the function call in parentheses, i.e.
+
+```julia
+@slow(f(1.0)) + 1.0
+```
 
 
 ```@index
