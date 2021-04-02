@@ -17,7 +17,9 @@ using Slow
 end
 
 # fake fast implementation
-f(x) = sin(x)
+function f(x)
+    return sin(x)
+end
 
 @time @slow f(1.0)
 @time f(1.0)
