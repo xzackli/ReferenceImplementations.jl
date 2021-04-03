@@ -27,7 +27,7 @@ macro slowdef(func)
     newfuncdef = MacroTools.combinedef(funcdef)
     expr = quote
         $newfuncdef
-        slow_call(::typeof($funcname), args...; kwargs...) =
+        Slow.slow_call(::typeof($funcname), args...; kwargs...) =
             ($funcname)(Slow.SlowImplementation(), args...; kwargs...)
     end
     # @show expr

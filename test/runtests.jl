@@ -8,6 +8,7 @@ using Test
         sleep(1)
         return sin(x)
     end
+    @test @slow(f(1.0)) == sin(1.0)
     f(x) = sin(x)
     @test f(1.0) == @slow f(1.0)
     Slow.@slowtest f(2.0)
@@ -15,6 +16,7 @@ using Test
 
     # test short form
     @slowdef g(x) = isnothing(sleep(1)) && return cos(x)
+    @test @slow(g(1.0)) == cos(1.0)
     g(x) = cos(x)
     @test g(1.0) == @slow g(1.0)
     Slow.@slowtest g(2.0)
