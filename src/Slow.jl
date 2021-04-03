@@ -10,6 +10,8 @@ slow_call(func, args...; kwargs...) = func(args...; kwargs...)
 Cassette.overdub(::SlowCtx{Val{nothing}}, func, args...; kwargs...) = slow_call(func, args...; kwargs...)
 Cassette.overdub(::SlowCtx{Val{T}}, func::T, args...; kwargs...) where T = slow_call(func, args...; kwargs...)
 
+# reused in @slow to avoid having Cassette import in user code
+overdub(args...; kwargs...) = Cassette.overdub(args...; kwargs...)
 
 export @slowdef, @slow
 
@@ -33,9 +35,6 @@ macro slowdef(func)
 end
 
 
-overdub(args...; kwargs...) = Cassette.overdub(args...; kwargs...)
-
-
 """
     @slow
 
@@ -43,6 +42,13 @@ Call a slow version of a function that was defined with [`@slowdef`](@ref).
 ```
 """
 macro slow(func)
+    # kwargs
+    if @capture(func, f_(args__; kwargs__))
+        newex = quote
+            Slow.overdub(Slow.SlowCtx(metadata=Val(nothing)), $(esc(f)), $(args...); $(kwargs...))
+        end
+        return newex
+    end
 
     # no kwargs
     if @capture(func, f_(args__))
