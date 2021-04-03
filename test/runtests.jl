@@ -25,9 +25,14 @@ end
 
 
 @testset "kwargs" begin
-
     @slowdef f(x; y=0) = return y
     f(x; y=0) = y
     @test @slow(f(1; y=1)) == 1
+end
 
+
+@testset "slow a specific function" begin
+    @slowdef f(x; y=0) = return y
+    f(x; y=0) = y
+    @test @slow(f(1; y=1)) == 1
 end

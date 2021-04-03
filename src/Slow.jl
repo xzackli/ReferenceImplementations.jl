@@ -41,9 +41,9 @@ end
 Call a slow version of a function that was defined with [`@slowdef`](@ref).
 ```
 """
-macro slow(func)
+macro slow(func_call)
     # kwargs
-    if @capture(func, f_(args__; kwargs__))
+    if @capture(func_call, f_(args__; kwargs__))
         newex = quote
             Slow.overdub(Slow.SlowCtx(metadata=Val(nothing)), $(esc(f)), $(args...); $(kwargs...))
         end
@@ -51,9 +51,33 @@ macro slow(func)
     end
 
     # no kwargs
-    if @capture(func, f_(args__))
+    if @capture(func_call, f_(args__))
         newex = quote
             Slow.overdub(Slow.SlowCtx(metadata=Val(nothing)), $(esc(f)), $(args...))
+        end
+        return newex
+    end
+
+    throw(ArgumentError("@slow must be applied to a function, i.e. @slow( f(x) )"))
+end
+
+
+# slow down a specific function
+macro slow(slow_func, func_call)
+    # kwargs
+    if @capture(func_call, f_(args__; kwargs__))
+        newex = quote
+            Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
+                $(esc(f)), $(args...); $(kwargs...))
+        end
+        return newex
+    end
+
+    # no kwargs
+    if @capture(func_call, f_(args__))
+        newex = quote
+            Slow.overdub(Slow.SlowCtx(metadata=Val(
+                typeof($(esc(slow_func))))), $(esc(f)), $(args...))
         end
         return newex
     end
