@@ -26,13 +26,30 @@ end
 
 @testset "kwargs" begin
     @slowdef f(x; y=0) = return y
-    f(x; y=0) = y
+    f(x; y=0) = 0
     @test @slow(f(1; y=1)) == 1
 end
 
 
 @testset "slow a specific function" begin
     @slowdef f(x; y=0) = return y
-    f(x; y=0) = y
-    @test @slow(f(1; y=1)) == 1
+    f(x; y=0) = 0
+    @test @slow(f, f(1; y=1)) == 1
+end
+
+
+@testset "nesting" begin
+
+    # fake naive implementation
+    @slowdef function f(x)
+        print("slow f\n")
+        return x
+    end
+
+    @slowdef function g(x)
+        print("slow g\n")
+        return f(x) + 1
+    end
+
+    @test 2 == @slow g(1)
 end
