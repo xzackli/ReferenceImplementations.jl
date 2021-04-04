@@ -8,17 +8,16 @@ struct SlowImplementation end
 struct SlowAll end
 Cassette.@context SlowCtx
 
-slow_call(::SlowCtx{Val{T}}, func, args...) where {T <: SlowAll} = func(args...)
-Cassette.overdub(ctx::SlowCtx{Val{T}}, func, args...) where {T <: SlowAll} = slow_call(ctx, func, args...)
 Cassette.overdub(ctx::SlowCtx{Val{T}}, func::Tf, args...) where {T, Tf<:T} =
     Cassette.recurse(ctx, func, SlowImplementation(), args...)
 
-# reused in @slow to avoid having Cassette import in user code
-overdub(args...; kwargs...) = Cassette.overdub(args...; kwargs...)
-recurse(args...; kwargs...) = Cassette.recurse(args...; kwargs...)
-slowctx(valt) = Cassette.disablehooks(SlowCtx(metadata=valt))
+# used as Slow.overdub, etc. in macros
+const overdub = Cassette.overdub
+const recurse = Cassette.recurse
+slowctx(valT) = Cassette.disablehooks(SlowCtx(metadata=valT))
 
 export @slowdef, @slow
+
 
 """
     @slowdef
@@ -31,12 +30,15 @@ macro slowdef(func)
     funcname = funcdef[:name]
     newfuncdef = MacroTools.combinedef(funcdef)
     expr = quote
+        if @isdefined(slow_call) == false
+            slow_call(::Slow.SlowCtx{Val{T}}, func, args...) where {T <: Slow.SlowAll} = func(args...)
+            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func, args...) where {T <: Slow.SlowAll} = slow_call(ctx, func, args...)
+        end
         $newfuncdef
-        Slow.slow_call(ctx::Slow.SlowCtx{T}, func::typeof($funcname),
+        slow_call(ctx::Slow.SlowCtx{T}, func::typeof($funcname),
             args...) where {T <: Val{Slow.SlowAll}} =
             Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
     end
-    # @show expr
     esc(expr)
 end
 
@@ -68,28 +70,28 @@ macro slow(func_call)
 end
 
 
-# # slow down a specific function
-# macro slow(slow_func, func_call)
-#     # kwargs
-#     if @capture(func_call, f_(args__; kwargs__))
-#         newex = quote
-#             Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
-#                 $(esc(f)), $(args...); $(kwargs...))
-#         end
-#         return newex
-#     end
+# slow down a specific function
+macro slow(slow_func, func_call)
+    # # kwargs
+    # if @capture(func_call, f_(args__; kwargs__))
+    #     newex = quote
+    #         Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
+    #             $(esc(f)), $(args...); $(kwargs...))
+    #     end
+    #     return newex
+    # end
 
-#     # no kwargs
-#     if @capture(func_call, f_(args__))
-#         newex = quote
-#             Slow.overdub(Slow.SlowCtx(metadata=Val(
-#                 typeof($(esc(slow_func))))), $(esc(f)), $(args...))
-#         end
-#         return newex
-#     end
+    # no kwargs
+    if @capture(func_call, f_(args__))
+        newex = quote
+            Slow.overdub(Slow.slowctx(Val(typeof($(esc(slow_func))))),
+                $(esc(f)), $(args...))
+        end
+        return newex
+    end
 
-#     throw(ArgumentError("@slow must be applied to a function, i.e. @slow( f(x) )"))
-# end
+    throw(ArgumentError("@slow must be applied to a function, i.e. @slow(f, f(x))"))
+end
 
 
 """
