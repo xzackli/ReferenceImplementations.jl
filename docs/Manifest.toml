@@ -9,6 +9,11 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[Cassette]]
+git-tree-sha1 = "742fbff99a2798f02bd37d25087efb5615b5a207"
+uuid = "7057c7e9-c182-5462-911a-8362d720325c"
+version = "0.3.5"
+
 [[Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -119,7 +124,7 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[Slow]]
-deps = ["MacroTools", "Test"]
+deps = ["Cassette", "MacroTools", "Test"]
 path = ".."
 uuid = "e4855c6d-60ae-49c0-a936-05b0c4d57984"
 version = "0.1.0"
