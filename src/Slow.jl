@@ -8,8 +8,9 @@ struct SlowImplementation end
 struct SlowAll end
 Cassette.@context SlowCtx
 
-Cassette.overdub(ctx::SlowCtx{Val{T}}, func::Tf, args...) where {T, Tf<:T} =
-    Cassette.recurse(ctx, func, SlowImplementation(), args...)
+# # for slowing a single function
+# Cassette.overdub(ctx::SlowCtx{Val{T}}, func::Tf, args...) where {T, Tf<:T} =
+#     Cassette.recurse(ctx, func, SlowImplementation(), args...)
 
 # used as Slow.overdub, etc. in macros
 const overdub = Cassette.overdub
@@ -29,19 +30,31 @@ macro slowdef(func)
     pushfirst!(funcdef[:args], :(::Slow.SlowImplementation))
     funcname = funcdef[:name]
     newfuncdef = MacroTools.combinedef(funcdef)
-    expr = quote
-        if @isdefined(slow_call) == false
-            slow_call(::Slow.SlowCtx{Val{T}}, func, args...) where {T <: Slow.SlowAll} = func(args...)
-            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func, args...) where {T <: Slow.SlowAll} = slow_call(ctx, func, args...)
+
+    if length(funcdef[:kwargs]) > 0  # we have kwargs
+        kwblock = quote
+            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::typeof($funcname), args...) where {T <: Slow.SlowAll} =
+                    Slow.recurse(ctx, kwf, kwargs, func, Slow.SlowImplementation(), args...)
+            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::T, args...) where {T <: typeof($funcname)} =
+                    Slow.recurse(ctx, kwf, kwargs, func, Slow.SlowImplementation(), args...)
         end
-        $newfuncdef
-        slow_call(ctx::Slow.SlowCtx{T}, func::typeof($funcname),
-            args...) where {T <: Val{Slow.SlowAll}} =
-            Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
+    else  # just args
+        kwblock = quote
+            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func::typeof($funcname), args...) where {T <: Slow.SlowAll} =
+                Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
+            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func::T, args...) where {T <: typeof($funcname)} =
+                Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
+        end
     end
-    esc(expr)
+
+    # @show kwblock
+    return esc(Expr(:block, newfuncdef, kwblock))
 end
 
+
+extract_kwargs(; kwargs...) = values(kwargs)
 
 """
     @slow
@@ -50,13 +63,14 @@ Call a slow version of a function that was defined with [`@slowdef`](@ref).
 ```
 """
 macro slow(func_call)
-    # # kwargs
-    # if @capture(func_call, f_(args__; kwargs__))
-    #     newex = quote
-    #         Slow.overdub(Slow.SlowCtx(metadata=Val(nothing)), $(esc(f)), $(args...); $(kwargs...))
-    #     end
-    #     return newex
-    # end
+    # kwargs
+    if @capture(func_call, f_(args__; kwargs__))
+        newex = quote
+            Slow.overdub(Slow.slowctx(Val(Slow.SlowAll)), Core.kwfunc($(esc(f))),
+                Slow.extract_kwargs(;$(kwargs...)), $(esc(f)), $(args...))
+        end
+        return newex
+    end
 
     # no kwargs
     if @capture(func_call, f_(args__))
@@ -72,14 +86,14 @@ end
 
 # slow down a specific function
 macro slow(slow_func, func_call)
-    # # kwargs
-    # if @capture(func_call, f_(args__; kwargs__))
-    #     newex = quote
-    #         Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
-    #             $(esc(f)), $(args...); $(kwargs...))
-    #     end
-    #     return newex
-    # end
+    # kwargs
+    if @capture(func_call, f_(args__; kwargs__))
+        newex = quote
+            Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
+                Core.kwfunc($(esc(f))), Slow.extract_kwargs(;$(kwargs...)), $(esc(f)), $(args...))
+        end
+        return newex
+    end
 
     # no kwargs
     if @capture(func_call, f_(args__))
