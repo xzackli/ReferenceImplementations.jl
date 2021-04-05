@@ -1,69 +1,91 @@
 ```@meta
 CurrentModule = Slow
+DocTestSetup = :(using Slow)
 ```
 
-# Slow
+# Slow.jl
 
-Documentation for [Slow](https://github.com/xzackli/Slow.jl). 
+Documentation for [Slow.jl](https://github.com/xzackli/Slow.jl). 
 
 This package exports [`@slowdef`](@ref) to define a slower, naive implementation of a function, and 
 change it (even when it's buried in some other function) using the [`@slow`](@ref) macro. It does 
 this by performing a Cassette pass on every top-level function call in the expression provided to the macro.
+
+## Why?
+
+I often write two versions of a function,
+
+* **V1: Naive implementation.** Since Julia is so expressive, this implementation is usually short and resembles the published equations or pseudocode.
+* **V2: Optimized implementation.** This version is written for a computer, i.e. ⊂ { exploits symmetries, reuses allocated memory, hits the cache in a friendly way, reorders calculations for SIMD, divides the work with threads, precomputes parts, caches intermediate expressions, ... }.
+
+V1 is easier to understand and extend. V2 is the implementation exported in your package and it's often much faster, but complicated and verbose. Julia sometimes allows you to use abstractions such that V1 ≈ V2, but this is not always possible. Slow.jl lets you keep both, and toggle them even when they're deeply nested.
+
+
+## Usage
 Here's an example, where we implement a slow version of a function, and a fast version. 
 
-```julia
+```jldoctest example1
 using Slow
 
 # fake naive implementation
 @slowdef function f(x)
-    sleep(1)  
+    println("slow f")
     return sin(x)
 end
 
 # fake fast implementation
 function f(x)
+    println("fast f")
     return sin(x)
 end
 
-@time @slow f(1.0)
-@time f(1.0)
+f(0.0)
+
+# output
+
+fast f
+0.0
+```
+Running `f(0.0)` just uses the definition we gave for it. However, `@slow f(0.0)` will go to the `@slowdef` version.
+
+```jldoctest example1
+@slow f(0.0)
+
+# output
+
+slow f
+0.0
 ```
 
-The function definition `func(args...)` prefaced by [`@slowdef`](@ref) is replaced with signature `func(::Slow.SlowImplementation, args...)`. Nested use of `func` can now 
-be toggled between the slow and fast implementations.
+The function definition `func(args...)`, when prefaced by [`@slowdef`](@ref), instead defines a function with signature `func(::Slow.SlowImplementation, args...)`. Use of `func` can now 
+be toggled between the slow and fast implementations, for arbitrary nesting.
 
-```julia
-h(x) = f(x)^2 + cos(x)^2
+```julia-repl example1
+julia> h(x) = f(x)^2 + cos(x)^2
+h (generic function with 1 method)
 
-@time @slow h(1.0)
-@time h(1.0)
+julia> h(1.0)
+fast f
+1.0
+
+julia> @slow h(1.0)
+slow f
+0.0
 ```
-```
-1.002132 seconds (18 allocations: 464 bytes)
-0.000000 seconds
-```
-Note that the allocations here arise from the use of `@time`, not [`@slow`](@ref) which only operates before compilation.
+
 
 ## Single Function Selection
 
 By default, [`@slow`](@ref) slows every function involved in the expression which has a slow implementation in the caller's module. 
 It can sometimes be desirable to slow down a specific function. This is achieved by providing a function before the expression to
-be evaluated by [`@slow`](@ref).
+be evaluated by `@slow func (expr)`.
 
-```julia
-julia> @slowdef function s(x)
-           println("slow s") 
-           return sin(x)
-       end
+```jldoctest
+julia> @slowdef s(x) = begin println("slow s"); return sin(x) end
        s(x) = sin(x)
-       
-       @slowdef function c(x)
-           println("slow c") 
-           return cos(x)
-       end
+       @slowdef c(x) = begin println("slow c"); return cos(x) end
        c(x) = cos(x)
-
-       h(x) = s(x)^2 + c(x)^2
+       h(x) = s(x)^2 + c(x)^2;
 
 julia> @slow s h(0.5)
 slow s
