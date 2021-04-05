@@ -1,6 +1,9 @@
 module Slow
 
+export @slowdef, @slow
+
 using MacroTools
+using MacroTools: postwalk
 using Cassette
 using Test
 
@@ -8,16 +11,12 @@ struct SlowImplementation end
 struct SlowAll end
 Cassette.@context SlowCtx
 
-# # for slowing a single function
-# Cassette.overdub(ctx::SlowCtx{Val{T}}, func::Tf, args...) where {T, Tf<:T} =
-#     Cassette.recurse(ctx, func, SlowImplementation(), args...)
-
-# used as Slow.overdub, etc. in macros
+# used as Slow.overdub, etc. in macros to shorten the expressions a bit
 const overdub = Cassette.overdub
 const recurse = Cassette.recurse
-slowctx(valT) = Cassette.disablehooks(SlowCtx(metadata=valT))
 
-export @slowdef, @slow
+# generate a standard SlowCtx context (no hooks!)
+slowctx(valT) = Cassette.disablehooks(SlowCtx(metadata=valT))
 
 
 """
@@ -54,7 +53,11 @@ macro slowdef(func)
 end
 
 
-extract_kwargs(; kwargs...) = values(kwargs)
+extractkwargs(; kwargs...) = values(kwargs)
+slowall(f, args...) = overdub(slowctx(Val(SlowAll)), f, args...)
+slowone(f, slow_func, args...) = Slow.overdub(
+    Slow.slowctx(Val(typeof(slow_func))), f, args...)
+
 
 """
     @slow
@@ -62,49 +65,41 @@ extract_kwargs(; kwargs...) = values(kwargs)
 Call a slow version of a function that was defined with [`@slowdef`](@ref).
 ```
 """
-macro slow(func_call)
-    # kwargs
-    if @capture(func_call, f_(args__; kwargs__))
-        newex = quote
-            Slow.overdub(Slow.slowctx(Val(Slow.SlowAll)), Core.kwfunc($(esc(f))),
-                Slow.extract_kwargs(;$(kwargs...)), $(esc(f)), $(args...))
+macro slow(ex)
+    newex = postwalk(ex) do x
+        if @capture(x, f_(args__; kwargs__))
+            return quote
+                Slow.slowall(Core.kwfunc($(esc(f))),
+                    Slow.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+            end
+        elseif @capture(x, f_(args__))
+            return quote
+                Slow.slowall($(esc(f)), $(args...))
+            end
+        else
+            return x
         end
-        return newex
     end
-
-    # no kwargs
-    if @capture(func_call, f_(args__))
-        newex = quote
-            Slow.overdub(Slow.slowctx(Val(Slow.SlowAll)), $(esc(f)), $(args...))
-        end
-        return newex
-    end
-
-    throw(ArgumentError("@slow must be applied to a function, i.e. @slow( f(x) )"))
+    return newex
 end
 
 
 # slow down a specific function
-macro slow(slow_func, func_call)
-    # kwargs
-    if @capture(func_call, f_(args__; kwargs__))
-        newex = quote
-            Slow.overdub(Slow.SlowCtx(metadata=Val(typeof($(esc(slow_func))))),
-                Core.kwfunc($(esc(f))), Slow.extract_kwargs(;$(kwargs...)), $(esc(f)), $(args...))
+macro slow(slow_func, ex)
+    newex = postwalk(ex) do x
+        if @capture(x, f_(args__; kwargs__))
+            return quote
+                Slow.slowone(Core.kwfunc($(esc(f))), $(esc(slow_func)),
+                    Slow.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+            end
+        elseif @capture(x, f_(args__))
+            return quote
+                Slow.slowone($(esc(f)), $(esc(slow_func)), $(args...))
+            end
+        else
+            return x
         end
-        return newex
     end
-
-    # no kwargs
-    if @capture(func_call, f_(args__))
-        newex = quote
-            Slow.overdub(Slow.slowctx(Val(typeof($(esc(slow_func))))),
-                $(esc(f)), $(args...))
-        end
-        return newex
-    end
-
-    throw(ArgumentError("@slow must be applied to a function, i.e. @slow(f, f(x))"))
 end
 
 

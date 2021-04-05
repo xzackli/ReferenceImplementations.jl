@@ -23,15 +23,19 @@ using Test
 
 end
 
-
+##
 @testset "kwargs" begin
     @slowdef f(x; y=0) = return y
     f(x; y=0) = 0
     @test @slow(f(1; y=1)) == 1
     @test @slow(f, f(1; y=1)) == 1
+
+    @slowdef kwf(y; x=0.) = cos(x)
+    kwf(y; x=0.) = sin(x)
+    # @test @slow kwf(0.; x=0.) == 1.
 end
 
-
+##
 @testset "slow a specific function" begin
     # fake naive implementation
     @slowdef function f(x)
@@ -48,7 +52,7 @@ end
     @test @slow(g(1)) == 0
 end
 
-
+##
 @testset "nesting" begin
 
     # fake naive implementation
