@@ -55,8 +55,7 @@ end
 
 extractkwargs(; kwargs...) = values(kwargs)
 slowall(f, args...) = overdub(slowctx(Val(SlowAll)), f, args...)
-slowone(f, slow_func, args...) = Slow.overdub(
-    Slow.slowctx(Val(typeof(slow_func))), f, args...)
+slowone(f, slow_func, args...) = overdub(slowctx(Val(typeof(slow_func))), f, args...)
 
 
 """

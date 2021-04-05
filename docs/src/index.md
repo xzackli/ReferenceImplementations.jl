@@ -26,13 +26,56 @@ end
 @time f(1.0)
 ```
 
-The function definition `func(args...)` prefaced by [`@slowdef`](@ref) is replaced with signature `func(::Slow.SlowImplementation, args...)`. This is a shortcut for a common Julia multimethod pattern, where different implementations dispatch on the first argument. I think the magic number here is two (fast and slow) -- if you have three or more implementations, you should probably just define your own multimethod type. This macro can help with development too -- one common pattern of writing code is to first make it correct, and then make it fast. By keeping separate fast and [`@slow`](@ref) implementations, one can more easily resist premature optimization and micro-optimizations.
-
-If you're using the slow version in a complicated expression, you should use the macro [`@slow`](@ref) like a function and wrap the function call in parentheses, i.e.
+The function definition `func(args...)` prefaced by [`@slowdef`](@ref) is replaced with signature `func(::Slow.SlowImplementation, args...)`. Nested use of `func` can now 
+be toggled between the slow and fast implementations.
 
 ```julia
-@slow(f(1.0)) + 1.0
+h(x) = f(x)^2 + cos(x)^2
+
+@time @slow h(1.0)
+@time h(1.0)
 ```
+```
+1.002132 seconds (18 allocations: 464 bytes)
+0.000000 seconds
+```
+Note that the allocations here arise from the use of `@time`, not [`@slow`](@ref) which only operates before compilation.
+
+## Single Function Selection
+
+By default, [`@slow`](@ref) slows every function involved in the expression which has a slow implementation in the caller's module. 
+It can sometimes be desirable to slow down a specific function. This is achieved by providing a function before the expression to
+be evaluated by [`@slow`](@ref).
+
+```julia
+julia> @slowdef function s(x)
+           println("slow s") 
+           return sin(x)
+       end
+       s(x) = sin(x)
+       
+       @slowdef function c(x)
+           println("slow c") 
+           return cos(x)
+       end
+       c(x) = cos(x)
+
+       h(x) = s(x)^2 + c(x)^2
+
+julia> @slow s h(0.5)
+slow s
+1.0
+
+julia> @slow c h(0.5)
+slow c
+1.0
+
+julia> @slow h(0.5)
+slow s
+slow c
+1.0
+```
+
 
 
 # API
