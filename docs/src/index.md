@@ -4,9 +4,12 @@ CurrentModule = Slow
 
 # Slow
 
-Documentation for [Slow](https://github.com/xzackli/Slow.jl). This package attempts to address a tension between understandability and efficiency in scientific computing. A naive Julia implementation of a calculation is often very readable, and resembles published equations or pseudocode. However, an optimized implementation that uses knowledge of how modern CPUs work can be much faster -- but it's usually more verbose. 
+Documentation for [Slow](https://github.com/xzackli/Slow.jl). 
 
-This package exports [`@slowdef`](@ref) to define a slower, naive implementation of a function, and call it with [`@slow`](@ref). Here's an example, where we implement a slow version of a function, and a fast version. 
+This package exports [`@slowdef`](@ref) to define a slower, naive implementation of a function, and 
+change it (even when it's buried in some other function) using the [`@slow`](@ref) macro. It does 
+this by performing a Cassette pass on every top-level function call in the expression provided to the macro.
+Here's an example, where we implement a slow version of a function, and a fast version. 
 
 ```julia
 using Slow
