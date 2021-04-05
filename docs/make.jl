@@ -1,16 +1,16 @@
-using Slow
+using SlowMacro
 using Documenter
 
-DocMeta.setdocmeta!(Slow, :DocTestSetup, :(using Slow); recursive=true)
+DocMeta.setdocmeta!(SlowMacro, :DocTestSetup, :(using SlowMacro); recursive=true)
 
 makedocs(;
-    modules=[Slow],
+    modules=[SlowMacro],
     authors="Zack Li",
-    repo="https://github.com/xzackli/Slow.jl/blob/{commit}{path}#{line}",
-    sitename="Slow.jl",
+    repo="https://github.com/xzackli/SlowMacro.jl/blob/{commit}{path}#{line}",
+    sitename="SlowMacro.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://xzackli.github.io/Slow.jl",
+        canonical="https://xzackli.github.io/SlowMacro.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/xzackli/Slow.jl",
+    repo="github.com/xzackli/SlowMacro.jl",
     devbranch = "main"
 )

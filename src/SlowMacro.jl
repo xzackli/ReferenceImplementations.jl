@@ -1,4 +1,4 @@
-module Slow
+module SlowMacro
 
 export @slowdef, @slow
 
@@ -11,7 +11,7 @@ struct SlowImplementation end
 struct SlowAll end
 Cassette.@context SlowCtx
 
-# used as Slow.overdub, etc. in macros to shorten the expressions a bit
+# used as SlowMacro.overdub, etc. in macros to shorten the expressions a bit
 const overdub = Cassette.overdub
 const recurse = Cassette.recurse
 
@@ -27,7 +27,7 @@ preface a method definition with this macro.
 
 # Examples
 ```julia
-using Slow
+using SlowMacro
 
 # define a slow version of x
 @slowdef f(x) = println("slow")
@@ -44,25 +44,25 @@ end
 """
 macro slowdef(func)
     funcdef = splitdef(func)
-    pushfirst!(funcdef[:args], :(::Slow.SlowImplementation))
+    pushfirst!(funcdef[:args], :(::SlowMacro.SlowImplementation))
     funcname = funcdef[:name]
     newfuncdef = MacroTools.combinedef(funcdef)
 
     if length(funcdef[:kwargs]) > 0  # we have kwargs
         kwblock = quote
-            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::typeof($funcname), args...) where {T <: Slow.SlowAll} =
-                    Slow.recurse(ctx, kwf, kwargs, func, Slow.SlowImplementation(), args...)
-            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::typeof($funcname), args...) where {T <: SlowMacro.SlowAll} =
+                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), args...)
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
                 kwargs::Any, func::T, args...) where {T <: typeof($funcname)} =
-                    Slow.recurse(ctx, kwf, kwargs, func, Slow.SlowImplementation(), args...)
+                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), args...)
         end
     else  # just args
         kwblock = quote
-            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func::typeof($funcname), args...) where {T <: Slow.SlowAll} =
-                Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
-            Slow.overdub(ctx::Slow.SlowCtx{Val{T}}, func::T, args...) where {T <: typeof($funcname)} =
-                Slow.recurse(ctx, func, Slow.SlowImplementation(), args...)
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::typeof($funcname), args...) where {T <: SlowMacro.SlowAll} =
+                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), args...)
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::T, args...) where {T <: typeof($funcname)} =
+                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), args...)
         end
     end
 
@@ -113,7 +113,7 @@ f(x) = begin println("fast f"); return s(x)^2 end
 f(0.)        # prints "fast f", "fast s"
 ```
 
-You can target individual functions for slowing by passing a function after slow.
+You can target individual functions for slowing by passing a function after SlowMacro.
 
 ```julia
 @slow s f(0.)  # prints "fast f", "slow s"
@@ -124,12 +124,12 @@ macro slow(ex)
     newex = postwalk(ex) do x
         if @capture(x, f_(args__; kwargs__))
             return quote
-                Slow.slowall(Core.kwfunc($(esc(f))),
-                    Slow.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+                SlowMacro.slowall(Core.kwfunc($(esc(f))),
+                    SlowMacro.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                Slow.slowall($(esc(f)), $(args...))
+                SlowMacro.slowall($(esc(f)), $(args...))
             end
         else
             return x
@@ -144,12 +144,12 @@ macro slow(slow_func, ex)
     newex = postwalk(ex) do x
         if @capture(x, f_(args__; kwargs__))
             return quote
-                Slow.slowone(Core.kwfunc($(esc(f))), $(esc(slow_func)),
-                    Slow.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+                SlowMacro.slowone(Core.kwfunc($(esc(f))), $(esc(slow_func)),
+                    SlowMacro.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                Slow.slowone($(esc(f)), $(esc(slow_func)), $(args...))
+                SlowMacro.slowone($(esc(f)), $(esc(slow_func)), $(args...))
             end
         else
             return x
@@ -162,7 +162,7 @@ end
 macro slowtest(func)
     if @capture(func, f_(xs__))
         newex = quote
-            @test $(esc(func)) == $(esc(f))(Slow.SlowImplementation(), $(xs...))
+            @test $(esc(func)) == $(esc(f))(SlowMacro.SlowImplementation(), $(xs...))
         end
         return newex
     end
