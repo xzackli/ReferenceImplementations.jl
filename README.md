@@ -14,7 +14,7 @@ For instructions, please consult the [documentation](https://xzackli.github.io/S
 
 # Examples
 
-Calling `@slow` on an expression calls every function with a slow implementation
+Calling `@slow` on an expression calls every method with a slow implementation
 in the nested sequence of calls for that expression.
 
 ```julia
@@ -27,7 +27,7 @@ mysin(x) = begin println("fast mysin"); return sin(x) end
 mysin(0.)        # prints "fast mysin"
 ```
 
-This works for slow functions that are nested inside other functions in the expression.
+This works for `@slowdef` functions that are nested inside other functions in the expression.
 
 ```julia
 @slowdef f(x) = begin println("slow f"); return mysin(x)^2 end
@@ -55,3 +55,7 @@ I often write two versions of a function,
 * **V2: Optimized implementation.** This version is written for a computer, i.e. ⊂ { exploits symmetries, reuses allocated memory, hits the cache in a friendly way, reorders calculations for SIMD, divides the work with threads, precomputes parts, caches intermediate expressions, ... }.
 
 V1 is easier to understand and extend. V2 is the implementation exported in your package and it's often much faster, but complicated and verbose. Julia sometimes allows you to use abstractions such that V1 ≈ V2, but this is not always possible. SlowMacro.jl lets you keep both.
+
+## How?
+
+`@slowdef` injects a first parameter into the method signature, so you're really defining `func(::Slow.SlowImplementation, args...; kwargs...)`. The `@slow` macro then applies a Cassette pass for each top-level function call in an expression which replaces `func(args...; kwargs...)` with `func(::Slow.SlowImplementation, args...; kwargs...)` if that method exists.
