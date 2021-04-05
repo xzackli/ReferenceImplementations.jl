@@ -8,15 +8,15 @@ using Cassette
 using Test
 
 struct RefImpl end
-struct SlowAll end
-Cassette.@context SlowCtx
+struct RefImplAll end  # used to dispatch when invoking all reference implementations
+Cassette.@context RefImplCtx
 
 # used as ReferenceImplementations.overdub, etc. in macros to shorten the expressions a bit
 const overdub = Cassette.overdub
 const recurse = Cassette.recurse
 
-# generate a standard SlowCtx context (no hooks!)
-slowctx(valT) = Cassette.disablehooks(SlowCtx(metadata=valT))
+# generate a standard RefImplCtx context (no hooks!)
+refimplctx(valT) = Cassette.disablehooks(RefImplCtx(metadata=valT))
 
 
 """
@@ -52,19 +52,19 @@ macro slowdef(func)
 
     if length(funcdef[:kwargs]) > 0  # we have kwargs
         overdub_block = quote
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::typeof($funcname), $(funcargs...)) where {T <: ReferenceImplementations.SlowAll} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::typeof($funcname), $(funcargs...)) where {T <: ReferenceImplementations.RefImplAll} =
                     ReferenceImplementations.recurse(ctx, kwf, kwargs, func, ReferenceImplementations.RefImpl(), $(funcargs...))
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
                 kwargs::Any, func::T, $(funcargs...)) where {T <: typeof($funcname)} =
                     ReferenceImplementations.recurse(ctx, kwf, kwargs, func, ReferenceImplementations.RefImpl(), $(funcargs...))
         end
     else  # just args
         overdub_block = quote
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.SlowCtx{Val{T}}, func::typeof($funcname),
-                $(funcargs...)) where {T <: ReferenceImplementations.SlowAll} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, func::typeof($funcname),
+                $(funcargs...)) where {T <: ReferenceImplementations.RefImplAll} =
                 ReferenceImplementations.recurse(ctx, func, ReferenceImplementations.RefImpl(), $(funcargs...))
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.SlowCtx{Val{T}}, func::T,
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, func::T,
                 $(funcargs...)) where {T <: typeof($funcname)} =
                 ReferenceImplementations.recurse(ctx, func, ReferenceImplementations.RefImpl(), $(funcargs...))
         end
@@ -77,8 +77,8 @@ end
 extractkwargs(; kwargs...) = values(kwargs)
 
 # functions for overdubbing
-slowall(f, args...) = overdub(slowctx(Val(SlowAll)), f, args...)
-slowone(f, slow_func, args...) = overdub(slowctx(Val(typeof(slow_func))), f, args...)
+refimplall(f, args...) = overdub(refimplctx(Val(RefImplAll)), f, args...)
+refimplone(f, slow_func, args...) = overdub(refimplctx(Val(typeof(slow_func))), f, args...)
 
 
 """
@@ -127,12 +127,12 @@ macro slow(ex)
     newex = postwalk(ex) do x
         if @capture(x, f_(args__; kwargs__))
             return quote
-                ReferenceImplementations.slowall(Core.kwfunc($(esc(f))),
+                ReferenceImplementations.refimplall(Core.kwfunc($(esc(f))),
                     ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                ReferenceImplementations.slowall($(esc(f)), $(args...))
+                ReferenceImplementations.refimplall($(esc(f)), $(args...))
             end
         else
             return x
@@ -147,12 +147,12 @@ macro slow(slow_func, ex)
     newex = postwalk(ex) do x
         if @capture(x, f_(args__; kwargs__))
             return quote
-                ReferenceImplementations.slowone(Core.kwfunc($(esc(f))), $(esc(slow_func)),
+                ReferenceImplementations.refimplone(Core.kwfunc($(esc(f))), $(esc(slow_func)),
                     ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                ReferenceImplementations.slowone($(esc(f)), $(esc(slow_func)), $(args...))
+                ReferenceImplementations.refimplone($(esc(f)), $(esc(slow_func)), $(args...))
             end
         else
             return x
