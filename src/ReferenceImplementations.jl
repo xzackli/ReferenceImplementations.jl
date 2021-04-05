@@ -62,7 +62,12 @@ refimplone(f, ref_func, args...) = overdub(refimplctx(Val(typeof(ref_func))), f,
 # evaluate expression with all reference implementations inside
 function refimpl_call(ex)
     newex = postwalk(ex) do x
-        if @capture(x, f_(args__; kwargs__))
+
+        # throw an error if there is a function definition in the expression
+        if @capture(MacroTools.longdef1(x), function (fcall_ | fcall_) body_ end)
+            throw(ArgumentError("To define a new reference implementation, the argument of @refimpl must"*
+                " contain only a function definition."))
+        elseif @capture(x, f_(args__; kwargs__))
             return quote
                 ReferenceImplementations.refimplall(Core.kwfunc($(esc(f))),
                     ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
@@ -82,7 +87,10 @@ end
 # evaluate expression with where only one function's reference implementations are invoked
 function refimpl_call(ref_func, ex)
     newex = postwalk(ex) do x
-        if @capture(x, f_(args__; kwargs__))
+        if @capture(MacroTools.longdef1(x), function (fcall_ | fcall_) body_ end)
+            throw(ArgumentError("To define a new reference implementation, the argument of @refimpl must"*
+                " contain only a function definition."))
+        elseif @capture(x, f_(args__; kwargs__))
             return quote
                 ReferenceImplementations.refimplone(Core.kwfunc($(esc(f))), $(esc(ref_func)),
                     ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
@@ -145,8 +153,7 @@ You can target individual functions to be replaced with their reference implemen
 ```
 """
 macro refimpl(ex)
-    if @capture(MacroTools.longdef1(ex),
-                   function (fcall_ | fcall_) body_ end)
+    if @capture(MacroTools.longdef1(ex), function (fcall_ | fcall_) body_ end)
         return esc(refimpl_def(ex))
     else
         return refimpl_call(ex)

@@ -74,3 +74,13 @@ end
     @test @refimpl f(0.) == 0.
     @test @refimpl f f(0.) == 0.
 end
+
+
+## no composite arguments (i.e. function definition and other expressions)
+@testset "no composites" begin
+    @test_throws ArgumentError("To define a new reference implementation, the argument"*
+        " of @refimpl must contain only a function definition.") try @eval (@refimpl begin
+                    f(x) = 1
+                    1 + 1
+                end) catch err; throw(err.error) end
+end
