@@ -5,47 +5,47 @@
 [![Build Status](https://github.com/xzackli/ReferenceImplementations.jl/workflows/CI/badge.svg)](https://github.com/xzackli/ReferenceImplementations.jl/actions)
 [![codecov](https://codecov.io/gh/xzackli/ReferenceImplementations.jl/branch/main/graph/badge.svg?token=rM1AU0MQ38)](https://codecov.io/gh/xzackli/ReferenceImplementations.jl)
 
-This package exports `@slowdef` and `@slow` macros to help you write fast scientific code. The `@slow` macro applies a [Cassette](https://github.com/JuliaLabs/Cassette.jl) pass to each 
-top-level function in the input expression, recursively replacing nested methods that have alternative implementations provided by `@slowdef`.
-A single function can be replaced via `@slow f (expression)`. 
+This package exports `@refimpl` macro to help you write fast scientific code. The `@refimpl` macro applies a [Cassette](https://github.com/JuliaLabs/Cassette.jl) pass to each 
+top-level function in the input expression, recursively replacing nested methods that have alternative implementations defined by prefacing a method definition with `@refimpl`.
+A single function can be replaced via `@refimpl f (expression)`. 
 
 For instructions, please consult the [documentation](https://xzackli.github.io/ReferenceImplementations.jl/dev).
 
 
 ## Examples
 
-Calling `@slow` on an expression calls every method with a slow implementation
+Calling `@refimpl` on an expression calls every method with a reference implementation
 in the nested sequence of calls for that expression.
 
 ```julia
 using ReferenceImplementations
-@slowdef mysin(x) = begin println("slow mysin"); return sin(x) end
-mysin(x) = begin println("fast mysin"); return sin(x) end
+@refimpl_def mysin(x) = begin println("ref mysin"); return sin(x) end
+mysin(x) = begin println("mysin"); return sin(x) end
 
-# call the slow version
-@slow mysin(0.)  # prints "slow mysin"
-mysin(0.)        # prints "fast mysin"
+# call the reference implementation
+@refimpl mysin(0.)  # prints "ref mysin"
+mysin(0.)        # prints "mysin"
 ```
 
-This works for `@slowdef` functions that are nested inside other functions in the expression.
+This works for `@refimpl` functions that are nested inside other functions in the expression.
 
 ```julia
-@slowdef f(x) = begin println("slow f"); return mysin(x)^2 end
-f(x) = begin println("fast f"); return mysin(x)^2 end
+@refimpl f(x) = begin println("ref f"); return mysin(x)^2 end
+f(x) = begin println("f"); return mysin(x)^2 end
 
-# call the slow version
-@slow f(0.)  # prints "slow f", "slow mysin"
-f(0.)        # prints "fast f", "fast mysin"
+# call the reference implementation
+@refimpl f(0.)  # prints "ref f", "ref mysin"
+f(0.)        # prints "f", "mysin"
 ```
 
-You can target individual functions for slowing by passing a function after slow.
+You can target individual functions to be replaced with their reference implementation by passing that function after `@refimpl`.
 
 ```julia
-@slow mysin f(0.)  # prints "fast f", "slow mysin"
-@slow f f(0.)  # prints "slow f", "fast mysin"
+@refimpl mysin f(0.)  # prints "fast f", "ref mysin"
+@refimpl f f(0.)  # prints "ref f", "fast mysin"
 ```
 
-Using `@slow` does incur some compilation cost, but subsequent calls should be fast.
+Using `@refimpl` does incur some compilation cost, but subsequent calls should be fast.
 
 ## Why?
 
@@ -58,8 +58,8 @@ V1 is easier to understand and extend. V2 is the implementation exported in your
 
 ## How?
 
-`@slowdef` injects a first argument into the method signature, doing the transform
+`@refimpl_def` injects a first argument into the method signature, doing the transform
 ```julia
 func(args...; kwargs...)  ⇨  func(::ReferenceImplementations.RefImpl, args...; kwargs...)
 ``` 
-with the same type signatures (preserving `where` and `::T`, for example). The `@slow` macro then applies a Cassette pass for each top-level function call in an expression which replaces `func(args...; kwargs...)` with `func(::ReferenceImplementations.RefImpl, args...; kwargs...)` if that method exists.
+with the same type signatures (preserving `where` and `::T`, for example). The `@refimpl` macro then applies a Cassette pass for each top-level function call in an expression which replaces `func(args...; kwargs...)` with `func(::ReferenceImplementations.RefImpl, args...; kwargs...)` if that method exists.
