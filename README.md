@@ -58,4 +58,8 @@ V1 is easier to understand and extend. V2 is the implementation exported in your
 
 ## How?
 
-`@slowdef` injects a first parameter into the method signature, so you're really defining `func(::Slow.SlowImplementation, args...; kwargs...)` with the same type signatures (preserving `where` and `::T`, for example). The `@slow` macro then applies a Cassette pass for each top-level function call in an expression which replaces `func(args...; kwargs...)` with `func(::Slow.SlowImplementation, args...; kwargs...)` if that method exists.
+`@slowdef` injects a first parameter into the method signature, doing the transform
+```julia
+func(args...; kwargs...)  ⇨  func(::Slow.SlowImplementation, args...; kwargs...)
+``` 
+with the same type signatures (preserving `where` and `::T`, for example). The `@slow` macro then applies a Cassette pass for each top-level function call in an expression which replaces `func(args...; kwargs...)` with `func(::Slow.SlowImplementation, args...; kwargs...)` if that method exists.
