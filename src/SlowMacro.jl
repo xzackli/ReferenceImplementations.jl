@@ -44,30 +44,33 @@ end
 """
 macro slowdef(func)
     funcdef = splitdef(func)
+    funcargs = copy(funcdef[:args])
     pushfirst!(funcdef[:args], :(::SlowMacro.SlowImplementation))
+
     funcname = funcdef[:name]
     newfuncdef = MacroTools.combinedef(funcdef)
 
     if length(funcdef[:kwargs]) > 0  # we have kwargs
-        kwblock = quote
+        overdub_block = quote
             SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::typeof($funcname), args...) where {T <: SlowMacro.SlowAll} =
-                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), args...)
+                kwargs::Any, func::typeof($funcname), $(funcargs...)) where {T <: SlowMacro.SlowAll} =
+                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), $(funcargs...))
             SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::T, args...) where {T <: typeof($funcname)} =
-                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), args...)
+                kwargs::Any, func::T, $(funcargs...)) where {T <: typeof($funcname)} =
+                    SlowMacro.recurse(ctx, kwf, kwargs, func, SlowMacro.SlowImplementation(), $(funcargs...))
         end
     else  # just args
-        kwblock = quote
-            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::typeof($funcname), args...) where {T <: SlowMacro.SlowAll} =
-                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), args...)
-            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::T, args...) where {T <: typeof($funcname)} =
-                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), args...)
+        overdub_block = quote
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::typeof($funcname),
+                $(funcargs...)) where {T <: SlowMacro.SlowAll} =
+                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), $(funcargs...))
+            SlowMacro.overdub(ctx::SlowMacro.SlowCtx{Val{T}}, func::T,
+                $(funcargs...)) where {T <: typeof($funcname)} =
+                SlowMacro.recurse(ctx, func, SlowMacro.SlowImplementation(), $(funcargs...))
         end
     end
 
-    # @show kwblock
-    return esc(Expr(:block, newfuncdef, kwblock))
+    return esc(Expr(:block, newfuncdef, overdub_block))
 end
 
 # used to convert kwarg iterator to NamedTuple

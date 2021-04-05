@@ -68,3 +68,11 @@ end
 
     @test 2 == @slow g(1)
 end
+
+## shouldn't replace methods that don't have slow alternates
+@testset "slow only specific type signatures" begin
+    @slowdef f(x::Int) = x
+    f(x::Float64) = x
+    @test @slow f(0.) == 0.
+    @test @slow f f(0.) == 0.
+end
