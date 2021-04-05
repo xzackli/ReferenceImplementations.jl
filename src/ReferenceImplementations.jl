@@ -107,7 +107,7 @@ end
 * If prefacing an expression, calls reference implementations of methods defined with [`@refimpl`](@ref).
 
 Preface an expression performs a Cassette pass on every top-level function
-in the expression, recursively looking for methopds with @refimpl_def implementations.
+in the expression, recursively looking for methods with @refimpl implementations.
 If a function is passed before the expression (separated by a space), only that
 method is switched with its reference implementation.
 
@@ -118,7 +118,7 @@ in the nested sequence of calls for that expression.
 
 ```julia
 using ReferenceImplementations
-@refimpl_def mysin(x) = begin println("ref mysin"); return sin(x) end
+@refimpl mysin(x) = begin println("ref mysin"); return sin(x) end
 mysin(x) = begin println("mysin"); return sin(x) end
 
 # call the reference implementation

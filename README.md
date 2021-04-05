@@ -19,7 +19,7 @@ in the nested sequence of calls for that expression.
 
 ```julia
 using ReferenceImplementations
-@refimpl_def mysin(x) = begin println("ref mysin"); return sin(x) end
+@refimpl mysin(x) = begin println("ref mysin"); return sin(x) end
 mysin(x) = begin println("mysin"); return sin(x) end
 
 # call the reference implementation
@@ -58,7 +58,7 @@ V1 is easier to understand and extend. V2 is the implementation exported in your
 
 ## How?
 
-`@refimpl_def` injects a first argument into the method signature, doing the transform
+`@refimpl` injects a first argument into the method signature, doing the transform
 ```julia
 func(args...; kwargs...)  ⇨  func(::ReferenceImplementations.RefImpl, args...; kwargs...)
 ``` 
