@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/xzackli/Slow.jl/branch/main/graph/badge.svg?token=rM1AU0MQ38)](https://codecov.io/gh/xzackli/Slow.jl)
 
 This package exports `@slowdef` and `@slow` macros to help you write fast scientific code. The `@slow` macro applies a Cassette pass to each 
-top-level function in the input expression, recursively replacing functions that have alternative implementations provided by `@slowdef`.
+top-level function in the input expression, recursively replacing nested functions that have alternative implementations provided by `@slowdef`.
 A single function can be replaced via `@slow f (expression)`. 
 
 For instructions, please consult the [documentation](https://xzackli.github.io/Slow.jl/dev).
