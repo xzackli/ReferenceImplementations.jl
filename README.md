@@ -11,22 +11,38 @@ A single function can be replaced via `@slow f (expression)`.
 
 For instructions, please consult the [documentation](https://xzackli.github.io/Slow.jl/dev).
 
+
+# Examples
+
+Calling `@slow` on an expression calls every function with a slow implementation
+in the nested sequence of calls for that expression.
+
 ```julia
 using Slow
+@slowdef mysin(x) = begin println("slow mysin"); return sin(x) end
+mysin(x) = begin println("fast mysin"); return sin(x) end
 
-# fake naive implementation
-@slowdef function f(x)
-    sleep(1)  
-    return sin(x)
-end
+# call the slow version
+@slow mysin(0.)  # prints "slow mysin"
+mysin(0.)        # prints "fast mysin"
+```
 
-# fake fast implementation
-function f(x)
-    return sin(x)
-end
+This works for slow functions that are nested inside other functions in the expression.
 
-@time @slow f(1.0)
-@time f(1.0)
+```julia
+@slowdef f(x) = begin println("slow f"); return s(x)^2 end
+f(x) = begin println("fast f"); return s(x)^2 end
+
+# call the slow version
+@slow f(0.)  # prints "slow f", "slow mysin"
+f(0.)        # prints "fast f", "fast mysin"
+```
+
+You can target individual functions for slowing by passing a function after slow.
+
+```julia
+@slow s f(0.)  # prints "fast f", "slow mysin"
+@slow f f(0.)  # prints "slow f", "fast mysin"
 ```
 
 ## Why?
