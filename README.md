@@ -12,7 +12,7 @@ A single function can be replaced via `@slow f (expression)`.
 For instructions, please consult the [documentation](https://xzackli.github.io/SlowMacro.jl/dev).
 
 
-# Examples
+## Examples
 
 Calling `@slow` on an expression calls every method with a slow implementation
 in the nested sequence of calls for that expression.
