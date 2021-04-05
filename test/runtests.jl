@@ -1,7 +1,7 @@
-using SlowMacro
+using ReferenceImplementations
 using Test
 
-@testset "SlowMacro.jl" begin
+@testset "ReferenceImplementations.jl" begin
 
     # test long form
     @slowdef function f(x)
@@ -11,7 +11,7 @@ using Test
     @test @slow(f(1.0)) == sin(1.0)
     f(x) = sin(x)
     @test f(1.0) == @slow f(1.0)
-    SlowMacro.@slowtest f(2.0)
+    ReferenceImplementations.@slowtest f(2.0)
 
 
     # test short form
@@ -19,7 +19,7 @@ using Test
     @test @slow(g(1.0)) == cos(1.0)
     g(x) = cos(x)
     @test g(1.0) == @slow g(1.0)
-    SlowMacro.@slowtest g(2.0)
+    ReferenceImplementations.@slowtest g(2.0)
 
 end
 

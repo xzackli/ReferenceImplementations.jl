@@ -55,9 +55,9 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using SlowMacro
-            DocMeta.setdocmeta!(SlowMacro, :DocTestSetup, :(using SlowMacro); recursive=true)
-            doctest(SlowMacro)'
+            using ReferenceImplementations
+            DocMeta.setdocmeta!(ReferenceImplementations, :DocTestSetup, :(using ReferenceImplementations); recursive=true)
+            doctest(ReferenceImplementations)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

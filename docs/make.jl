@@ -1,16 +1,16 @@
-using SlowMacro
+using ReferenceImplementations
 using Documenter
 
-DocMeta.setdocmeta!(SlowMacro, :DocTestSetup, :(using SlowMacro); recursive=true)
+DocMeta.setdocmeta!(ReferenceImplementations, :DocTestSetup, :(using ReferenceImplementations); recursive=true)
 
 makedocs(;
-    modules=[SlowMacro],
+    modules=[ReferenceImplementations],
     authors="Zack Li",
-    repo="https://github.com/xzackli/SlowMacro.jl/blob/{commit}{path}#{line}",
-    sitename="SlowMacro.jl",
+    repo="https://github.com/xzackli/ReferenceImplementations.jl/blob/{commit}{path}#{line}",
+    sitename="ReferenceImplementations.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://xzackli.github.io/SlowMacro.jl",
+        canonical="https://xzackli.github.io/ReferenceImplementations.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/xzackli/SlowMacro.jl",
+    repo="github.com/xzackli/ReferenceImplementations.jl",
     devbranch = "main"
 )

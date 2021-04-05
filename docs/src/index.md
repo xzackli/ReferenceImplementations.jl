@@ -1,11 +1,11 @@
 ```@meta
-CurrentModule = SlowMacro
-DocTestSetup = :(using SlowMacro)
+CurrentModule = ReferenceImplementations
+DocTestSetup = :(using ReferenceImplementations)
 ```
 
-# SlowMacro.jl
+# ReferenceImplementations.jl
 
-Documentation for [SlowMacro.jl](https://github.com/xzackli/SlowMacro.jl). 
+Documentation for [ReferenceImplementations.jl](https://github.com/xzackli/ReferenceImplementations.jl). 
 
 This package exports [`@slowdef`](@ref) to define a slower, naive implementation of a function, and 
 change it (even when it's buried in some other function) using the [`@slow`](@ref) macro. It does 
@@ -18,14 +18,14 @@ I often write two versions of a function,
 * **V1: Naive implementation.** Since Julia is so expressive, this implementation is usually short and resembles the published equations or pseudocode.
 * **V2: Optimized implementation.** This version is written for a computer, i.e. ⊂ { exploits symmetries, reuses allocated memory, hits the cache in a friendly way, reorders calculations for SIMD, divides the work with threads, precomputes parts, caches intermediate expressions, ... }.
 
-V1 is easier to understand and extend. V2 is the implementation exported in your package and it's often much faster, but complicated and verbose. Julia sometimes allows you to use abstractions such that V1 ≈ V2, but this is not always possible. SlowMacro.jl lets you keep both, and toggle them even when they're deeply nested.
+V1 is easier to understand and extend. V2 is the implementation exported in your package and it's often much faster, but complicated and verbose. Julia sometimes allows you to use abstractions such that V1 ≈ V2, but this is not always possible. ReferenceImplementations.jl lets you keep both, and toggle them even when they're deeply nested.
 
 
 ## Usage
 Here's an example, where we implement a slow version of a function, and a fast version. 
 
 ```jldoctest example1
-using SlowMacro
+using ReferenceImplementations
 
 # fake naive implementation
 @slowdef function f(x)
@@ -57,7 +57,7 @@ slow f
 0.0
 ```
 
-The function definition `func(args...)`, when prefaced by [`@slowdef`](@ref), instead defines a function with signature `func(::SlowMacro.SlowImplementation, args...)`. Use of `func` can now 
+The function definition `func(args...)`, when prefaced by [`@slowdef`](@ref), instead defines a function with signature `func(::ReferenceImplementations.RefImpl, args...)`. Use of `func` can now 
 be toggled between the slow and fast implementations, for arbitrary nesting.
 
 ```julia-repl example1
@@ -109,5 +109,5 @@ slow c
 ```
 
 ```@autodocs
-Modules = [SlowMacro]
+Modules = [ReferenceImplementations]
 ```
