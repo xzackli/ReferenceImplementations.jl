@@ -30,8 +30,8 @@ mysin(0.)        # prints "fast mysin"
 This works for slow functions that are nested inside other functions in the expression.
 
 ```julia
-@slowdef f(x) = begin println("slow f"); return s(x)^2 end
-f(x) = begin println("fast f"); return s(x)^2 end
+@slowdef f(x) = begin println("slow f"); return mysin(x)^2 end
+f(x) = begin println("fast f"); return mysin(x)^2 end
 
 # call the slow version
 @slow f(0.)  # prints "slow f", "slow mysin"
@@ -41,9 +41,11 @@ f(0.)        # prints "fast f", "fast mysin"
 You can target individual functions for slowing by passing a function after slow.
 
 ```julia
-@slow s f(0.)  # prints "fast f", "slow mysin"
+@slow mysin f(0.)  # prints "fast f", "slow mysin"
 @slow f f(0.)  # prints "slow f", "fast mysin"
 ```
+
+Using `@slow` does incur some compilation cost, but subsequent calls should be fast.
 
 ## Why?
 
