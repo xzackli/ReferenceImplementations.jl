@@ -15,7 +15,7 @@ If the `@refimpl` macro is applied to a method definition, it injects a first ar
 ```julia
 func(args...; kwargs...)  ⇨  func(::ReferenceImplementations.RefImpl, args...; kwargs...)
 ``` 
-with the type signatures preserved (so `where` and `::T` match, for example). When you apply the `@refimpl` macro to an expression that isn't a function definition, it applies a Cassette pass for each top-level function call in an expression, which replaces `func(args...; kwargs...)` with `func(::ReferenceImplementations.RefImpl, args...; kwargs...)` if that method exists. 
+with the type signatures preserved (so `where` and `::T` match, for example). When you apply the `@refimpl` macro to an expression that isn't a function definition, it applies a [Cassette](https://github.com/JuliaLabs/Cassette.jl) pass for each top-level function call in an expression, which replaces `func(args...; kwargs...)` with `func(::ReferenceImplementations.RefImpl, args...; kwargs...)` if that method exists. 
 
 This also means that you can manually call the reference implementation without the macro, using
 ```julia
