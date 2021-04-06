@@ -112,7 +112,7 @@ end
     @refimpl (function name) (expression)
 
 * If prefacing a function definition, defines a reference implementation for that function.
-* If prefacing an expression, calls reference implementations of methods defined with [`@refimpl`](@ref).
+* If prefacing an expression that isn't a function definition, invokes reference implementations of methods defined with [`@refimpl`](@ref), even if nested.
 
 Preface an expression performs a Cassette pass on every top-level function
 in the expression, recursively looking for methods with @refimpl implementations.
@@ -131,7 +131,7 @@ mysin(x) = begin println("mysin"); return sin(x) end
 
 # call the reference implementation
 @refimpl mysin(0.)  # prints "ref mysin"
-mysin(0.)        # prints "mysin"
+mysin(0.)           # prints "mysin"
 ```
 
 This works for `@refimpl` functions that are nested inside other functions in the expression.
@@ -142,14 +142,14 @@ f(x) = begin println("f"); return mysin(x)^2 end
 
 # call the reference implementation
 @refimpl f(0.)  # prints "ref f", "ref mysin"
-f(0.)        # prints "f", "mysin"
+f(0.)           # prints "f", "mysin"
 ```
 
 You can target individual functions to be replaced with their reference implementation by passing that function after `@refimpl`.
 
 ```julia
-@refimpl mysin f(0.)  # prints "fast f", "ref mysin"
-@refimpl f f(0.)  # prints "ref f", "fast mysin"
+@refimpl mysin f(0.)  # prints "f", "ref mysin"
+@refimpl f f(0.)      # prints "ref f", "mysin"
 ```
 """
 macro refimpl(ex)
