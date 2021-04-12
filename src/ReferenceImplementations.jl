@@ -47,7 +47,7 @@ function refimpl_def(func)
         end
     end
 
-    return (Expr(:block, newfuncdef, overdub_block))
+    return esc(Expr(:block, newfuncdef, overdub_block))
 end
 
 
@@ -69,18 +69,18 @@ function refimpl_call(ex)
                 " contain only a function definition."))
         elseif @capture(x, f_(args__; kwargs__))
             return quote
-                ReferenceImplementations.refimplall(Core.kwfunc($(esc(f))),
-                    ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+                ReferenceImplementations.refimplall(Core.kwfunc($(f)),
+                    ReferenceImplementations.extractkwargs(;$(kwargs...)), $((f)), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                ReferenceImplementations.refimplall($(esc(f)), $(args...))
+                ReferenceImplementations.refimplall($(f), $(args...))
             end
         else
             return x
         end
     end
-    return newex
+    return esc(newex)
 end
 
 
@@ -92,17 +92,18 @@ function refimpl_call(ref_func, ex)
                 " contain only a function definition."))
         elseif @capture(x, f_(args__; kwargs__))
             return quote
-                ReferenceImplementations.refimplone(Core.kwfunc($(esc(f))), $(esc(ref_func)),
-                    ReferenceImplementations.extractkwargs(;$(kwargs...)), $(esc(f)), $(args...))
+                ReferenceImplementations.refimplone(Core.kwfunc($(f)), $(ref_func),
+                    ReferenceImplementations.extractkwargs(;$(kwargs...)), $(f), $(args...))
             end
         elseif @capture(x, f_(args__))
             return quote
-                ReferenceImplementations.refimplone($(esc(f)), $(esc(ref_func)), $(args...))
+                ReferenceImplementations.refimplone($(f), $(ref_func), $(args...))
             end
         else
             return x
         end
     end
+    return esc(newex)
 end
 
 
@@ -154,7 +155,7 @@ You can target individual functions to be replaced with their reference implemen
 """
 macro refimpl(ex)
     if @capture(MacroTools.longdef1(ex), function (fcall_ | fcall_) body_ end)
-        return esc(refimpl_def(ex))
+        return refimpl_def(ex)
     else
         return refimpl_call(ex)
     end
@@ -165,7 +166,6 @@ end
 macro refimpl(ref_func, ex)
     return refimpl_call(ref_func, ex)
 end
-
 
 
 end  # module

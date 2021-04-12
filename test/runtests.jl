@@ -89,5 +89,5 @@ end
 @testset "escaping locals" begin
     x = 0.0
     @refimpl f(x) = sin(x)
-    @refimpl f(x)
+    @test @refimpl f(x) == 0.0
 end
