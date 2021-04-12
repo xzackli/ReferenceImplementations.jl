@@ -22,6 +22,7 @@ refimplctx(valT) = Cassette.disablehooks(RefImplCtx(metadata=valT))
 function refimpl_def(func)
     funcdef = splitdef(func)
     funcargs = copy(funcdef[:args])
+    whereparams = funcdef[:whereparams]
     pushfirst!(funcdef[:args], :(::ReferenceImplementations.RefImpl))
 
     funcname = funcdef[:name]
@@ -29,20 +30,26 @@ function refimpl_def(func)
 
     if length(funcdef[:kwargs]) > 0  # we have kwargs
         overdub_block = quote
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::typeof($funcname), $(funcargs...)) where {T <: ReferenceImplementations.RefImplAll} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{TREFIMPL}}, 
+                kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::typeof($funcname), $(funcargs...)) where {
+                        TREFIMPL <: ReferenceImplementations.RefImplAll, $(whereparams...)} =
                     ReferenceImplementations.recurse(ctx, kwf, kwargs, func, ReferenceImplementations.RefImpl(), $(funcargs...))
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, kwf::Core.kwftype(typeof($funcname)),
-                kwargs::Any, func::T, $(funcargs...)) where {T <: typeof($funcname)} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{TREFIMPL}}, 
+                kwf::Core.kwftype(typeof($funcname)),
+                kwargs::Any, func::TREFIMPL, $(funcargs...)) where {
+                        TREFIMPL <: typeof($funcname), $(whereparams...)} =
                     ReferenceImplementations.recurse(ctx, kwf, kwargs, func, ReferenceImplementations.RefImpl(), $(funcargs...))
         end
     else  # just args
         overdub_block = quote
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, func::typeof($funcname),
-                $(funcargs...)) where {T <: ReferenceImplementations.RefImplAll} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{TREFIMPL}}, func::typeof($funcname),
+                $(funcargs...)) where {
+                    TREFIMPL <: ReferenceImplementations.RefImplAll, $(whereparams...)} =
                 ReferenceImplementations.recurse(ctx, func, ReferenceImplementations.RefImpl(), $(funcargs...))
-            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{T}}, func::T,
-                $(funcargs...)) where {T <: typeof($funcname)} =
+            ReferenceImplementations.overdub(ctx::ReferenceImplementations.RefImplCtx{Val{TREFIMPL}}, func::TREFIMPL,
+                $(funcargs...)) where {
+                    TREFIMPL <: typeof($funcname), $(whereparams...)} =
                 ReferenceImplementations.recurse(ctx, func, ReferenceImplementations.RefImpl(), $(funcargs...))
         end
     end

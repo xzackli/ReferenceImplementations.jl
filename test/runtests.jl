@@ -91,3 +91,10 @@ end
     @refimpl f(x) = sin(x)
     @test @refimpl f(x) == 0.0
 end
+
+## type parameters
+@testset "type params" begin
+    x = 0.0
+    @refimpl f(x::T) where T = sin(x)
+    @test @refimpl f(x) == 0.0
+end
